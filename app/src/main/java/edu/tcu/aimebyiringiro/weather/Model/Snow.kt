@@ -1,4 +1,4 @@
-package edu.tcu.bmei.weather.model
+package edu.tcu.aimebyiringiro.weather.Model
 
 import com.google.gson.annotations.SerializedName
 
