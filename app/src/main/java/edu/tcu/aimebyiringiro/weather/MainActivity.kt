@@ -19,11 +19,17 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import edu.tcu.aimebyiringiro.weather.Model.WeatherResponse
 import edu.tcu.aimebyiringiro.weather.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 /*
 Update location
@@ -36,6 +42,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var view: View
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var weatherService: WeatherService
+    private lateinit var weatherResponse: WeatherResponse
+
+
 
     // Register the permissions callback, which handles the user's response to the
 // system permissions dialog. Save the return value, an instance of
@@ -53,6 +63,8 @@ class MainActivity : AppCompatActivity() {
 
     private var cancellationTokenSource: CancellationTokenSource? = null
 
+    private var weatherServiceCall: Call<WeatherResponse>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -65,6 +77,13 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        val retrofit = Retrofit.Builder()
+            .baseUrl(getString(R.string.base_url))
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+
+        weatherService = retrofit.create(WeatherService::class.java)
+
         requestLocationPermission()
     }
 
@@ -150,7 +169,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateWeather(location: Location) {
+        weatherServiceCall = weatherService.getWeather(
+            lat = location.latitude,
+            lon = location.longitude,
+            appid = getString(R.string.api_key),
+            units = "imperial"
+        )
+        weatherServiceCall?.enqueue(
+            object : Callback<WeatherResponse> {
+                override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
+                  val weatherResponseNullable = response.body()
+                    if (weatherResponseNullable != null) {
+                        weatherResponse = weatherResponseNullable
+                        updatePlace(location)
+                        displayWeather()
+                    }
 
+                    TODO("Not yet implemented")
+                }
+
+                override fun onFailure(p0: Call<WeatherResponse>, p1: Throwable) {
+                    displayUpdateFailed()
+                    TODO("Not yet implemented")
+                }
+
+            }
+        )
+    }
+
+    private fun displayWeather() {
+        TODO("Not yet implemented")
+    }
+
+    private fun updatePlace(location: Location) {
+        TODO("Not yet implemented")
     }
 
 }

@@ -23,4 +23,5 @@
     <string name="other_data">Feels Like: %.0f°\nVisibility: %.0f mi\nPressure: %.2f inHg</string>
     <string name="connecting">Connecting…</string>
     <string name="updated">Updated %s</string>
+    <string name="api_key" />
 </resources>
