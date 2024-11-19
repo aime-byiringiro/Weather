@@ -3,6 +3,7 @@ package edu.tcu.aimebyiringiro.weather
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.view.View
@@ -104,7 +105,9 @@ class MainActivity : AppCompatActivity() {
     I have a cocurrent routine, I don't have to wait and I can continue with the delay. updateLocationAndWeather and statt with teh dealy
 
      */
-
+    private fun cancelRequest() {
+       cancellationTokenSource?.cancel()
+    }
     private fun updateLocationAndWeatherRepeatedly() {
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -113,24 +116,40 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) { updateLocationAndWeather()}
                 // launch(Dispatchers.Main) { updateLocationAndWeather() }
                 delay(15000)
+                cancelRequest()
             }
 
         }
     }
 
     private fun updateLocationAndWeather() {
-        when {
+        when (PackageManager.PERMISSION_GRANTED) {
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED -> {
+            ) -> {
                 cancellationTokenSource = CancellationTokenSource()
                 fusedLocationClient.getCurrentLocation(
                     Priority.PRIORITY_HIGH_ACCURACY,
                     cancellationTokenSource!!.token
-                )
+                ).addOnSuccessListener {
+                    if (it != null) {
+                        updateWeather(it)
+
+                    } else {
+                        displayUpdateFailed()
+                    }
+                }
             }
         }
+
+    }
+
+    private fun displayUpdateFailed() {
+        TODO("Not yet implemented")
+    }
+
+    private fun updateWeather(location: Location) {
 
     }
 
