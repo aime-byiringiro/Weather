@@ -1,8 +1,8 @@
-package edu.tcu.aimebyiringiro.weather.Model
+package edu.tcu.aimebyiringiro.weather.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Snow(
+data class Rain(
     @SerializedName("1h")
     val one_h: Double,
 

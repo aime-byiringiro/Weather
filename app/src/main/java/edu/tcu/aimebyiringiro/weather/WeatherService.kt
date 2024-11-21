@@ -1,5 +1,5 @@
 package edu.tcu.aimebyiringiro.weather
-import edu.tcu.aimebyiringiro.weather.Model.WeatherResponse
+import edu.tcu.aimebyiringiro.weather.model.WeatherResponse
 
 import retrofit2.Call
 import retrofit2.http.GET

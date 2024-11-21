@@ -1,4 +1,4 @@
-package edu.tcu.aimebyiringiro.weather.Model
+package edu.tcu.aimebyiringiro.weather.model
 
 data class Wind(
     val speed: Double,

@@ -3,9 +3,9 @@ package edu.tcu.aimebyiringiro.weather
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.icu.util.TimeZone
 import android.location.Location
 import android.os.Bundle
-import android.os.CancellationSignal
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +19,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
-import edu.tcu.aimebyiringiro.weather.Model.WeatherResponse
+import edu.tcu.aimebyiringiro.weather.model.WeatherResponse
 import edu.tcu.aimebyiringiro.weather.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -30,6 +30,8 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.text.DateFormat
+import java.util.Date
 
 /*
 Update location
@@ -44,9 +46,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var weatherService: WeatherService
     private lateinit var weatherResponse: WeatherResponse
-
-
-
     // Register the permissions callback, which handles the user's response to the
 // system permissions dialog. Save the return value, an instance of
 // ActivityResultLauncher. You can use either a val, as shown in this snippet,
@@ -161,12 +160,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
-    private fun displayUpdateFailed() {
-        TODO("Not yet implemented")
-    }
 
     private fun updateWeather(location: Location) {
         weatherServiceCall = weatherService.getWeather(
@@ -178,7 +173,7 @@ class MainActivity : AppCompatActivity() {
         weatherServiceCall?.enqueue(
             object : Callback<WeatherResponse> {
                 override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
-                  val weatherResponseNullable = response.body()
+                    val weatherResponseNullable = response.body()
                     if (weatherResponseNullable != null) {
                         weatherResponse = weatherResponseNullable
                         updatePlace(location)
@@ -198,11 +193,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayWeather() {
-        TODO("Not yet implemented")
+        val description = weatherResponse.weather[0].
+        description.split(" ").
+        joinToString("") {
+            it.replaceFirstChar { char -> char.uppercase() }
+        }
+        binding.descriptionTv.text =
+            getString(R.string.description,
+                description,
+                weatherResponse.main.temp_max,
+                weatherResponse.main.temp_min)
+
+        val utcInMs =(weatherResponse.sys.sunrise + weatherResponse.timezone) * 1000L - TimeZone.getDefault().rawOffset
+        val sunrise = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(utcInMs))
+
+        /*
+        you need to convert in units , read the apis
+        Loook at visibility
+         */
+
+
     }
 
     private fun updatePlace(location: Location) {
         TODO("Not yet implemented")
+    }
+
+    private fun displayUpdateFailed() {
+        TODO("Not yet implemented")
+    }
+
+    private fun displayPlace() {
+       binding.placeTv.text =
+           getString(R.string.place, geoResponse[0].name, geoResponse[0].state)
     }
 
 }
