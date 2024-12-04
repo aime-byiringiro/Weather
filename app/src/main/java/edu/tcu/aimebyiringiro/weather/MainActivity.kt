@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var weatherService: WeatherService
     private lateinit var geoService: GeoService
     private lateinit var weatherResponse: WeatherResponse
+    private lateinit var geoResponse: List<Place>
     // Register the permissions callback, which handles the user's response to the
 // system permissions dialog. Save the return value, an instance of
 // ActivityResultLauncher. You can use either a val, as shown in this snippet,
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     private var weatherServiceCall: Call<WeatherResponse>? = null
 
     private var geoServiceCall: Call<List<Place>>? = null
-    private var geoResponse: List<Place>? = null
+
     private var updateJob: Job? = null
     private var delayJob: Job? = null
 
@@ -236,17 +237,6 @@ class MainActivity : AppCompatActivity() {
             (weatherResponse.sys.sunset + weatherResponse.timezone) * 1000L - TimeZone.getDefault().rawOffset
         val sunset = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sunsetUtcInMs))
 
-        // Display location (Place name and country/state)
-        val placeName = geoResponse?.get(0)?.name ?: getString(R.string.no_data)
-        val placeDetails = geoResponse?.get(0)?.let { place ->
-            if (place.state.isNullOrEmpty()) place.country else place.state
-        } ?: getString(R.string.no_data)
-
-
-        binding.placeTv.text = getString(
-            R.string.place,
-            placeName,
-            placeDetails)
 
         // Display temperature
         binding.temperatureTv.text = getString(
@@ -304,9 +294,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updatePlace(location: Location) {
         geoServiceCall = geoService.getPlace(
-            lat = location.latitude,
-            lon = location.longitude,
-            appid = getString(R.string.api_key)
+            location.latitude,
+            location.longitude,
+            getString(R.string.appid)
         )
         geoServiceCall?.enqueue(object : Callback<List<Place>> {
             override fun onResponse(call: Call<List<Place>>, response: Response<List<Place>>) {

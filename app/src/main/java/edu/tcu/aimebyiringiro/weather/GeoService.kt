@@ -11,7 +11,6 @@ interface GeoService {
     fun getPlace(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
-        @Query("limit") limit: Int = 1, // Limit to 1 result
         @Query("appid") appid: String
     ): Call<List<Place>>
 }
