@@ -130,16 +130,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
-    /*
-
-    If I use withContext, I am going to have updatateLocationwehter and I have to wai and
-    and I can continue with the delay
-
-    If use launch, I am going to have updateLocationAndWeatherRepeatedly and I can continue with the delay
-    I have a cocurrent routine, I don't have to wait and I can continue with the delay. updateLocationAndWeather and statt with teh dealy
-
-     */
     private fun cancelRequest() {
        cancellationTokenSource?.cancel()
         weatherServiceCall?.cancel()
@@ -212,6 +202,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun displayWeather() {
 
+
+        val weatherCode = weatherResponse.weather[0].icon
+        val resId = weatherCondition(weatherCode) // This should return the resource ID (e.g., R.drawable.ic_01d)
+        binding.conditionIv.setImageResource(resId)
 
 
 
@@ -341,6 +335,23 @@ class MainActivity : AppCompatActivity() {
         } ?: run {
             // If geoResponse is null, show a fallback message
             displayUpdateFailed()
+        }
+    }
+
+    private fun  weatherCondition(weatherCode: String): Int {
+        return when (weatherCode) {
+            "01d" -> R.drawable.ic_01d     // Clear sky (day)
+            "01n" -> R.drawable.ic_01n    // Clear sky (night)
+            "02n" -> R.drawable.ic_02n  // Few clouds (day)
+            "03d", "03n" -> R.drawable.ic_03// Scattered clouds
+            "04d", "04n" -> R.drawable.ic_04   // Broken clouds
+            "09d", "09n" -> R.drawable.ic_09     // Shower rain
+            "10d" -> R.drawable.ic_10d              // Rain (day)
+            "10n" -> R.drawable.ic_10n             // Rain (night)
+            "11d", "11n" -> R.drawable.ic_11   // Thunderstorm
+            "13d", "13n" -> R.drawable.ic_13          // Snow
+            "50d", "50n" -> R.drawable.ic_50         // Mist
+            else -> R.drawable.ic_01d                // Default or unknown code
         }
     }
 
