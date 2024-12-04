@@ -6,7 +6,7 @@
         information for your current location.</string>
 
     <string name="base_url">https://api.openweathermap.org/</string>
-    <string name="appid">PLACE YOUR API KEY HERE</string>
+    <string name="appid">f1ae8bbafa4b56f45ab4d591783d5801</string>
 
     <string name="no_data">--</string>
     <string name="place">%s\n%s</string>
