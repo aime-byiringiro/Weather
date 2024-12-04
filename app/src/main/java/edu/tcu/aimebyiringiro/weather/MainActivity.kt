@@ -23,6 +23,7 @@ import edu.tcu.aimebyiringiro.weather.model.WeatherResponse
 import edu.tcu.aimebyiringiro.weather.databinding.ActivityMainBinding
 import edu.tcu.aimebyiringiro.weather.m.Place
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,6 +70,8 @@ class MainActivity : AppCompatActivity() {
 
     private var geoServiceCall: Call<List<Place>>? = null
     private var geoResponse: List<Place>? = null
+    private var updateJob: Job? = null
+    private var delayJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +94,12 @@ class MainActivity : AppCompatActivity() {
         geoService = retrofit.create(GeoService::class.java)
 
         requestLocationPermission()
+    }
+    override fun onDestroy() {
+        cancelRequest()
+        delayJob?.cancel()
+        super.onDestroy()
+//        cancellationTokenSource?.cancel()
     }
 
     private fun requestLocationPermission() {
@@ -132,14 +141,18 @@ class MainActivity : AppCompatActivity() {
      */
     private fun cancelRequest() {
        cancellationTokenSource?.cancel()
+        weatherServiceCall?.cancel()
+        geoServiceCall?.cancel()
+        updateJob?.cancel()
     }
     private fun updateLocationAndWeatherRepeatedly() {
 
-        lifecycleScope.launch(Dispatchers.IO) {
+      delayJob =  lifecycleScope.launch(Dispatchers.IO) {
+
 
             while (true) {
-                withContext(Dispatchers.Main) { updateLocationAndWeather()}
-                // launch(Dispatchers.Main) { updateLocationAndWeather() }
+//                withContext(Dispatchers.Main) { updateLocationAndWeather()}
+                updateJob= launch(Dispatchers.Main) { updateLocationAndWeather() }
                 delay(15000)
                 cancelRequest()
             }
