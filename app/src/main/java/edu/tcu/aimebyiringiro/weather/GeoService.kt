@@ -1,21 +1,16 @@
 package edu.tcu.aimebyiringiro.weather
 
-class GeoService {
+import edu.tcu.aimebyiringiro.weather.m.Place
+import retrofit2.Call
+import retrofit2.http.GET
+import retrofit2.http.Query
 
-//    https://openweathermap.org/api/geocoding-api#reverse
+interface GeoService {
 
-    /*
-    return type should be
-    call:< List <Place>>
-     */
-    /*
-    always use geog[0] to refert toe the first element; this is for location
-     */
-
-
-    /*
-    alway use city, if there is no state, show the country
-
-    if sno/rain --> how starndard precipitation
-     */
+    @GET("geo/1.0/reverse")
+    fun getPlace(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("appid") appid: String
+    ): Call<List<Place>>
 }
