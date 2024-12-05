@@ -35,11 +35,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.DateFormat
 import java.util.Date
 
-/*
-Update location
-Launch google maps
-Clear the cache
- */
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,10 +45,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var geoService: GeoService
     private lateinit var weatherResponse: WeatherResponse
     private lateinit var geoResponse: List<Place>
-    // Register the permissions callback, which handles the user's response to the
-// system permissions dialog. Save the return value, an instance of
-// ActivityResultLauncher. You can use either a val, as shown in this snippet,
-// or a lateinit var in your onAttach() or onCreate() method.
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -281,9 +272,6 @@ class MainActivity : AppCompatActivity() {
             pressureInHg
         )
     }
-
-
-
 
 
     private fun updatePlace(location: Location) {
