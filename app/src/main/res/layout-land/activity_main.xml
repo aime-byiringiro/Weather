@@ -115,7 +115,7 @@
             android:layout_margin="5dp"
             app:cardCornerRadius="5dp"
             app:cardElevation="5dp"
-            app:layout_constraintBottom_toTopOf="@id/other_cv"
+
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_weight="1"
             app:layout_constraintStart_toEndOf="@id/sun_cv"
