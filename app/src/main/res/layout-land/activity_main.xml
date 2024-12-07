@@ -71,19 +71,22 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/sun_cv"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
             app:cardCornerRadius="5dp"
             app:cardElevation="5dp"
             app:layout_constraintEnd_toStartOf="@id/wind_cv"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/description_tv"
+            app:layout_constraintBottom_toBottomOf="@id/wind_cv"
             app:layout_constraintHorizontal_chainStyle="spread"
             app:layout_constraintHorizontal_weight="1">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+
                 android:layout_margin="5dp">
 
                 <TextView
@@ -104,6 +107,7 @@
                     android:textSize="17.5sp"
                     app:layout_constraintTop_toBottomOf="@id/sun_title_tv"
                     app:layout_constraintVertical_chainStyle="packed" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -147,13 +151,15 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/precipitation_cv"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
             app:cardCornerRadius="5dp"
             app:cardElevation="5dp"
             app:layout_constraintEnd_toStartOf="@id/other_cv"
             app:layout_constraintStart_toEndOf="@id/wind_cv"
+            app:layout_constraintBottom_toBottomOf="@id/wind_cv"
             app:layout_constraintTop_toBottomOf="@id/description_tv"
             app:layout_constraintHorizontal_weight="1">
 
