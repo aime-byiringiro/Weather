@@ -26,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -35,11 +34,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.DateFormat
 import java.util.Date
 
-/*
-Update location
-Launch google maps
-Clear the cache
- */
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,18 +44,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var geoService: GeoService
     private lateinit var weatherResponse: WeatherResponse
     private lateinit var geoResponse: List<Place>
-    // Register the permissions callback, which handles the user's response to the
-// system permissions dialog. Save the return value, an instance of
-// ActivityResultLauncher. You can use either a val, as shown in this snippet,
-// or a lateinit var in your onAttach() or onCreate() method.
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
                 updateLocationAndWeatherRepeatedly()
+                binding.connectionTv.text = getString(R.string.location_permission_granted)
             } else {
-
+                binding.connectionTv.text = getString(R.string.location_permission_denied)
             }
         }
 
@@ -130,16 +121,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
-    /*
-
-    If I use withContext, I am going to have updatateLocationwehter and I have to wai and
-    and I can continue with the delay
-
-    If use launch, I am going to have updateLocationAndWeatherRepeatedly and I can continue with the delay
-    I have a cocurrent routine, I don't have to wait and I can continue with the delay. updateLocationAndWeather and statt with teh dealy
-
-     */
     private fun cancelRequest() {
        cancellationTokenSource?.cancel()
         weatherServiceCall?.cancel()
@@ -153,7 +134,12 @@ class MainActivity : AppCompatActivity() {
 
             while (true) {
 //                withContext(Dispatchers.Main) { updateLocationAndWeather()}
-                updateJob= launch(Dispatchers.Main) { updateLocationAndWeather() }
+                updateJob= launch(Dispatchers.Main) {
+                    updateLocationAndWeather()
+                    binding.connectionTv.text = buildString {
+        append("Updated Just Now")
+    }
+                }
                 delay(15000)
                 cancelRequest()
             }
@@ -212,6 +198,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun displayWeather() {
 
+
+        val weatherCode = weatherResponse.weather[0].icon
+        val resId = weatherCondition(weatherCode) // This should return the resource ID (e.g., R.drawable.ic_01d)
+        binding.conditionIv.setImageResource(resId)
 
 
 
@@ -289,9 +279,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
-
-
     private fun updatePlace(location: Location) {
         geoServiceCall = geoService.getPlace(
             location.latitude,
@@ -324,23 +311,39 @@ class MainActivity : AppCompatActivity() {
     private fun displayUpdateFailed() {
         println("failed")
     }
-
     private fun displayPlace() {
-        geoResponse?.let { places ->
-            val place = places[0] // Always use the first place from the response
-
-            // Format the location string based on availability of state
+        // Check if geoResponse is not null and contains at least one place
+        val place = geoResponse.firstOrNull()
+        if (place != null) {
+            // Determine location name based on whether state is available
             val locationName = if (place.state.isNullOrEmpty()) {
                 getString(R.string.place, place.name, place.country) // Use city and country
             } else {
                 getString(R.string.place, place.name, place.state) // Use city and state
             }
-
-            // Set the formatted string to the TextView
+            // Display the formatted location name in the TextView
             binding.placeTv.text = locationName
-        } ?: run {
-            // If geoResponse is null, show a fallback message
+        } else {
+            // Show a fallback message if no data is available
             displayUpdateFailed()
+        }
+    }
+
+
+    private fun  weatherCondition(weatherCode: String): Int {
+        return when (weatherCode) {
+            "01d" -> R.drawable.ic_01d     // Clear sky (day)
+            "01n" -> R.drawable.ic_01n    // Clear sky (night)
+            "02n" -> R.drawable.ic_02n  // Few clouds (day)
+            "03d", "03n" -> R.drawable.ic_03// Scattered clouds
+            "04d", "04n" -> R.drawable.ic_04   // Broken clouds
+            "09d", "09n" -> R.drawable.ic_09     // Shower rain
+            "10d" -> R.drawable.ic_10d              // Rain (day)
+            "10n" -> R.drawable.ic_10n             // Rain (night)
+            "11d", "11n" -> R.drawable.ic_11   // Thunderstorm
+            "13d", "13n" -> R.drawable.ic_13          // Snow
+            "50d", "50n" -> R.drawable.ic_50         // Mist
+            else -> R.drawable.ic_01d                // Default or unknown code
         }
     }
 
