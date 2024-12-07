@@ -26,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -51,8 +50,9 @@ class MainActivity : AppCompatActivity() {
         ) { isGranted: Boolean ->
             if (isGranted) {
                 updateLocationAndWeatherRepeatedly()
+                binding.connectionTv.text = getString(R.string.location_permission_granted)
             } else {
-
+                binding.connectionTv.text = getString(R.string.location_permission_denied)
             }
         }
 
@@ -134,7 +134,12 @@ class MainActivity : AppCompatActivity() {
 
             while (true) {
 //                withContext(Dispatchers.Main) { updateLocationAndWeather()}
-                updateJob= launch(Dispatchers.Main) { updateLocationAndWeather() }
+                updateJob= launch(Dispatchers.Main) {
+                    updateLocationAndWeather()
+                    binding.connectionTv.text = buildString {
+        append("Updated Just Now")
+    }
+                }
                 delay(15000)
                 cancelRequest()
             }
@@ -306,25 +311,24 @@ class MainActivity : AppCompatActivity() {
     private fun displayUpdateFailed() {
         println("failed")
     }
-
     private fun displayPlace() {
-        geoResponse?.let { places ->
-            val place = places[0] // Always use the first place from the response
-
-            // Format the location string based on availability of state
+        // Check if geoResponse is not null and contains at least one place
+        val place = geoResponse.firstOrNull()
+        if (place != null) {
+            // Determine location name based on whether state is available
             val locationName = if (place.state.isNullOrEmpty()) {
                 getString(R.string.place, place.name, place.country) // Use city and country
             } else {
                 getString(R.string.place, place.name, place.state) // Use city and state
             }
-
-            // Set the formatted string to the TextView
+            // Display the formatted location name in the TextView
             binding.placeTv.text = locationName
-        } ?: run {
-            // If geoResponse is null, show a fallback message
+        } else {
+            // Show a fallback message if no data is available
             displayUpdateFailed()
         }
     }
+
 
     private fun  weatherCondition(weatherCode: String): Int {
         return when (weatherCode) {
