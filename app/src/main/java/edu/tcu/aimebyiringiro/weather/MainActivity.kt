@@ -2,6 +2,7 @@ package edu.tcu.aimebyiringiro.weather
 
 
 import android.Manifest
+import android.app.Dialog
 import android.content.pm.PackageManager
 import android.icu.util.TimeZone
 import android.location.Location
@@ -25,7 +26,9 @@ import edu.tcu.aimebyiringiro.weather.m.Place
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -38,6 +41,7 @@ import java.util.Date
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var progressBar: View
     private lateinit var view: View
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var weatherService: WeatherService
@@ -70,7 +74,12 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         view = binding.root // or view = binding.main
+
         setContentView(view)
+
+//        val progressBar = findViewById<View>(R.id.progress_bar)
+//        progressBar.visibility = View.GONE
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -128,26 +137,33 @@ class MainActivity : AppCompatActivity() {
         updateJob?.cancel()
     }
     private fun updateLocationAndWeatherRepeatedly() {
+        val dialog = Dialog(this).apply {
+            setContentView(R.layout.in_progress)
+            setCancelable(false) // Optional, to prevent dismissing the dialog manually
+        }
 
-      delayJob =  lifecycleScope.launch(Dispatchers.IO) {
-
-
-            while (true) {
-//                withContext(Dispatchers.Main) { updateLocationAndWeather()}
-                updateJob= launch(Dispatchers.Main) {
-                    updateLocationAndWeather()
-                    binding.connectionTv.text = buildString {
-        append("Updated Just Now")
-    }
+        delayJob = lifecycleScope.launch(Dispatchers.IO) {
+            while (isActive) { // Ensure the coroutine can be canceled gracefully
+                withContext(Dispatchers.Main) {
+                    dialog.show() // Show the dialog initially
+                    binding.connectionTv.text = getString(R.string.updating)
                 }
-                delay(15000)
-                cancelRequest()
-            }
 
+                // Call the function to update location and weather
+                updateLocationAndWeather()
+
+                withContext(Dispatchers.Main) {
+                    binding.connectionTv.text = getString(R.string.updated_just_now)
+                    dialog.dismiss() // Dismiss the dialog after the update
+                }
+
+                delay(15000) // Wait for 15 seconds before repeating
+            }
         }
     }
 
     private fun updateLocationAndWeather() {
+
         when (PackageManager.PERMISSION_GRANTED) {
             ContextCompat.checkSelfPermission(
                 this,
