@@ -77,6 +77,9 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(view)
 
+
+
+
 //        val progressBar = findViewById<View>(R.id.progress_bar)
 //        progressBar.visibility = View.GONE
 
