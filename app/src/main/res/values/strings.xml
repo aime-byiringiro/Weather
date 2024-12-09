@@ -24,4 +24,6 @@
     <string name="connecting">Connecting…</string>
     <string name="updated">Updated %s</string>
     <string name="api_key" />
+    <string name="updating">Updating...</string>
+    <string name="updated_just_now">Updated Just Now</string>
 </resources>
