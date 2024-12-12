@@ -20,6 +20,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.android.material.snackbar.Snackbar
 import edu.tcu.aimebyiringiro.weather.model.WeatherResponse
 import edu.tcu.aimebyiringiro.weather.databinding.ActivityMainBinding
 import edu.tcu.aimebyiringiro.weather.m.Place
@@ -36,8 +37,17 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.DateFormat
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 
+/**
+ * The main activity of the application.
+ *
+ * This activity displays the weather for the current location. It also updates
+ * the weather every 10 seconds.
+ *
+ * @author Aime Byiringiro
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -48,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var geoService: GeoService
     private lateinit var weatherResponse: WeatherResponse
     private lateinit var geoResponse: List<Place>
+
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -57,8 +68,17 @@ class MainActivity : AppCompatActivity() {
                 binding.connectionTv.text = getString(R.string.location_permission_granted)
             } else {
                 binding.connectionTv.text = getString(R.string.location_permission_denied)
+                Snackbar.make(
+                    findViewById(android.R.id.content),
+                    getString(R.string.location_permission_denied),
+                    Snackbar.LENGTH_SHORT
+                ).show()
             }
         }
+
+    private var lastUpdateTimeMillis: Long = 0L // Tracks the last update time
+
+
 
     private var cancellationTokenSource: CancellationTokenSource? = null
 
@@ -68,21 +88,16 @@ class MainActivity : AppCompatActivity() {
 
     private var updateJob: Job? = null
     private var delayJob: Job? = null
-
+    /**
+     * Requests the location permission and updates the location and weather
+     * every 10 seconds. It also shows the permission status on the UI.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
-        view = binding.root // or view = binding.main
-
+        view = binding.root
         setContentView(view)
-
-
-
-
-//        val progressBar = findViewById<View>(R.id.progress_bar)
-//        progressBar.visibility = View.GONE
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -93,18 +108,30 @@ class MainActivity : AppCompatActivity() {
             .baseUrl(getString(R.string.base_url))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-
         weatherService = retrofit.create(WeatherService::class.java)
         geoService = retrofit.create(GeoService::class.java)
-
         requestLocationPermission()
     }
+    /**
+     * Called when the activity is being destroyed.
+     * This function cancels any ongoing location and weather update requests
+     * to release resources and prevent memory leaks.
+     * It also cancels any active delay jobs and calls the superclass's onDestroy method.
+     */
     override fun onDestroy() {
         cancelRequest()
         delayJob?.cancel()
         super.onDestroy()
-//        cancellationTokenSource?.cancel()
     }
+    /**
+     * Requests the location permission, updates the location and weather
+     * every 10 seconds. It also shows the permission status on the UI.
+     * The permission is requested using the registerForActivityResult API,
+     * which allows the permission status to be saved and restored across
+     * configuration changes. The location and weather is updated every 10
+     * seconds using a foreground service. The permission status is
+     * displayed on the UI using the connectionTv TextView.
+     */
 
     private fun requestLocationPermission() {
 
@@ -115,16 +142,26 @@ class MainActivity : AppCompatActivity() {
             ) == PackageManager.PERMISSION_GRANTED -> {
                 //The permission is already granted.
                 updateLocationAndWeatherRepeatedly()
+                binding.connectionTv.text = getString(R.string.location_permission_granted)
 
             }
             ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.ACCESS_COARSE_LOCATION) -> {
-                //Generate teh Snack bar to explain
-                    // If Ok is clicked, show the the prompt/launcher
 
-                    //this is not done yet, only when the user clicks ok
-                    requestPermissionLauncher.launch(
-                        Manifest.permission.ACCESS_COARSE_LOCATION)
+                  binding.connectionTv.text = getString(R.string.location_permission_denied)
+                  Snackbar.make(
+                      findViewById(android.R.id.content),
+                      getString(R.string.location_permission_required),
+                      Snackbar.LENGTH_INDEFINITE
+                  ).setAction("OK") {
+                      requestPermissionLauncher.launch(
+                          Manifest.permission.ACCESS_COARSE_LOCATION
+                      )
+                  }.show()
+               // Generate teh Snack bar to explain
+                        // If Ok is clicked, show the the prompt/launcher
+
+                        //this is not done yet, only when the user clicks ok
             }
             else -> {
                 requestPermissionLauncher.launch(
@@ -133,38 +170,30 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+    /**
+     * Cancels the permission request and any active network requests.
+     * This is called in onDestroy to release resources and prevent memory leaks.
+     */
     private fun cancelRequest() {
        cancellationTokenSource?.cancel()
         weatherServiceCall?.cancel()
         geoServiceCall?.cancel()
         updateJob?.cancel()
     }
-    private fun updateLocationAndWeatherRepeatedly() {
-        val dialog = Dialog(this).apply {
-            setContentView(R.layout.in_progress)
-            setCancelable(false) // Optional, to prevent dismissing the dialog manually
-        }
+/**
+ * Continuously updates the location and weather information every 10 seconds.
+ * It shows a non-cancelable progress dialog while updating and updates the
+ * connection status text view on the UI.
+ */
 
-        delayJob = lifecycleScope.launch(Dispatchers.IO) {
-            while (isActive) { // Ensure the coroutine can be canceled gracefully
-                withContext(Dispatchers.Main) {
-                    dialog.show() // Show the dialog initially
-                    binding.connectionTv.text = getString(R.string.updating)
-                }
 
-                // Call the function to update location and weather
-                updateLocationAndWeather()
 
-                withContext(Dispatchers.Main) {
-                    binding.connectionTv.text = getString(R.string.updated_just_now)
-                    dialog.dismiss() // Dismiss the dialog after the update
-                }
 
-                delay(15000) // Wait for 15 seconds before repeating
-            }
-        }
-    }
-
+    /**
+     * Launches a repeating job to update the location and weather information.
+     * It shows a non-cancelable progress dialog while updating and updates the
+     * connection status text view on the UI.
+     */
     private fun updateLocationAndWeather() {
 
         when (PackageManager.PERMISSION_GRANTED) {
@@ -189,6 +218,10 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    /**
+     * Starts a repeating job to update the location and weather information in the background.
+     * It will cancel the previous job before starting a new one.
+     */
     private fun updateWeather(location: Location) {
         weatherServiceCall = weatherService.getWeather(
             lat = location.latitude,
@@ -204,6 +237,7 @@ class MainActivity : AppCompatActivity() {
                         weatherResponse = weatherResponseNullable
                         updatePlace(location)
                         displayWeather()
+
                     }
                 }
 
@@ -213,13 +247,18 @@ class MainActivity : AppCompatActivity() {
 
             }
         )
+        lastUpdateTimeMillis = System.currentTimeMillis()
     }
+    /**
+     * Retrieves the weather information using the latitude and longitude of the location.
+     * It launches a network request using the Retrofit API and saves the response to the
+     * weatherResponse variable. It also calls the updatePlace function to update the place
+     * information and displays the weather information using the displayWeather function.
+     */
 
     private fun displayWeather() {
-
-
         val weatherCode = weatherResponse.weather[0].icon
-        val resId = weatherCondition(weatherCode) // This should return the resource ID (e.g., R.drawable.ic_01d)
+        val resId = weatherCondition(weatherCode)
         binding.conditionIv.setImageResource(resId)
 
 
@@ -235,28 +274,20 @@ class MainActivity : AppCompatActivity() {
             weatherResponse.main.temp_max,
             weatherResponse.main.temp_min
         )
-
-        // Convert sunrise time to local
         val sunriseUtcInMs =
             (weatherResponse.sys.sunrise + weatherResponse.timezone) * 1000L - TimeZone.getDefault().rawOffset
         val sunrise = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sunriseUtcInMs))
 
-        // Convert sunset time to local
         val sunsetUtcInMs =
             (weatherResponse.sys.sunset + weatherResponse.timezone) * 1000L - TimeZone.getDefault().rawOffset
         val sunset = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sunsetUtcInMs))
 
-
-        // Display temperature
         binding.temperatureTv.text = getString(
             R.string.temperature,
             weatherResponse.main.temp
         )
-
-        // Display sun title
         binding.sunTitleTv.text = getString(R.string.sun_title)
 
-        // Display sun data (sunrise and sunset times)
         binding.sunDataTv.text = getString(
             R.string.sun_data,
             sunrise,
@@ -273,20 +304,14 @@ class MainActivity : AppCompatActivity() {
 
         )
 
-        // Display precipitation title
         binding.precipitationTitleTv.text = getString(R.string.precipitation_title)
 
-        // Display precipitation data (humidity and cloudiness)
         binding.precipitationDataTv.text = getString(
             R.string.precipitation_data,
             weatherResponse.main.humidity,
             weatherResponse.clouds.all
         )
-
-        // Display other title
         binding.otherTitleTv.text = getString(R.string.other_title)
-
-        // Display other data (feels like, visibility, and pressure)
         val visibilityMiles = weatherResponse.visibility / 1609.34 // Convert meters to miles
         val pressureInHg = weatherResponse.main.pressure / 33.864 // Convert hPa to inHg
         binding.otherDataTv.text = getString(
@@ -297,7 +322,9 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-
+    /**
+     * Updates the user interface with the given [WeatherResponse].
+     */
     private fun updatePlace(location: Location) {
         geoServiceCall = geoService.getPlace(
             location.latitude,
@@ -325,46 +352,120 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-
-
     private fun displayUpdateFailed() {
+        showLastUpdatedMessage()
         println("failed")
     }
+
+    /**
+    * Updates the display with the name of the place.
+    * This function retrieves the first place from the geoResponse list
+    * and sets the text of the placeTv TextView with the location name.
+    * If the state is available, it is displayed; otherwise, the country is used.
+    * If no place is found, it calls displayUpdateFailed to handle the failure case.
+    */
     private fun displayPlace() {
-        // Check if geoResponse is not null and contains at least one place
         val place = geoResponse.firstOrNull()
         if (place != null) {
-            // Determine location name based on whether state is available
+
             val locationName = if (place.state.isNullOrEmpty()) {
-                getString(R.string.place, place.name, place.country) // Use city and country
+                getString(R.string.place, place.name, place.country)
             } else {
-                getString(R.string.place, place.name, place.state) // Use city and state
+                getString(R.string.place, place.name, place.state)
             }
-            // Display the formatted location name in the TextView
             binding.placeTv.text = locationName
         } else {
-            // Show a fallback message if no data is available
             displayUpdateFailed()
         }
     }
 
 
+    /**
+    * Returns the drawable resource id corresponding to the given weather code.
+    * The weather code represents different weather conditions, such as clear sky,
+    * clouds, rain, snow, etc., and is used to select the appropriate weather icon.
+    *
+    * @param weatherCode The weather code string representing the current weather condition.
+    * @return The drawable resource id for the corresponding weather icon.
+    */
+
     private fun  weatherCondition(weatherCode: String): Int {
         return when (weatherCode) {
-            "01d" -> R.drawable.ic_01d     // Clear sky (day)
-            "01n" -> R.drawable.ic_01n    // Clear sky (night)
-            "02n" -> R.drawable.ic_02n  // Few clouds (day)
-            "03d", "03n" -> R.drawable.ic_03// Scattered clouds
-            "04d", "04n" -> R.drawable.ic_04   // Broken clouds
-            "09d", "09n" -> R.drawable.ic_09     // Shower rain
-            "10d" -> R.drawable.ic_10d              // Rain (day)
-            "10n" -> R.drawable.ic_10n             // Rain (night)
-            "11d", "11n" -> R.drawable.ic_11   // Thunderstorm
-            "13d", "13n" -> R.drawable.ic_13          // Snow
-            "50d", "50n" -> R.drawable.ic_50         // Mist
-            else -> R.drawable.ic_01d                // Default or unknown code
+            "01d" -> R.drawable.ic_01d
+            "01n" -> R.drawable.ic_01n
+            "02n" -> R.drawable.ic_02n
+            "03d", "03n" -> R.drawable.ic_03
+            "04d", "04n" -> R.drawable.ic_04
+            "09d", "09n" -> R.drawable.ic_09
+            "10d" -> R.drawable.ic_10d
+            "10n" -> R.drawable.ic_10n
+            "11d", "11n" -> R.drawable.ic_11
+            "13d", "13n" -> R.drawable.ic_13
+            "50d", "50n" -> R.drawable.ic_50
+            else -> R.drawable.ic_01d
         }
     }
+
+    /**
+     * Continuously updates the location and weather information every 10 seconds.
+     * If the app is offline, it will display how long ago the last update occurred.
+     */
+    private fun updateLocationAndWeatherRepeatedly() {
+        val dialog = Dialog(this).apply {
+            setContentView(R.layout.in_progress)
+            setCancelable(false)
+        }
+
+        delayJob = lifecycleScope.launch(Dispatchers.Main) {
+            while (isActive) {
+                try {
+                    dialog.show()
+                    binding.connectionTv.text = getString(R.string.updating)
+
+                    // Call the existing updateLocationAndWeather function
+                    updateLocationAndWeather()
+
+                    // Success listener in the existing function will handle updates
+                    // Use a delay to wait for it to complete and check the result
+                    delay(2000) // Wait for the update process to potentially finish
+
+                    // If successful, the last update time should now be updated
+                    if (lastUpdateTimeMillis > 0) {
+                        binding.connectionTv.text = getString(R.string.updated_just_now)
+                    } else {
+                        // Handle no update
+                        showLastUpdatedMessage()
+                    }
+                } catch (e: Exception) {
+                    showLastUpdatedMessage() // Show "Updated X minutes ago" on failure
+                } finally {
+                    dialog.dismiss()
+                }
+
+                delay(15000) // Wait 15 seconds for the next update
+            }
+        }
+    }
+
+    /**
+    * Displays the "Updated X minutes ago" message based on the last update time.
+    */
+    private fun showLastUpdatedMessage() {
+        if (lastUpdateTimeMillis > 0) {
+            val elapsedTimeMillis = System.currentTimeMillis() - lastUpdateTimeMillis
+            val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTimeMillis)
+
+            binding.connectionTv.text = when {
+                elapsedMinutes < 1 -> getString(R.string.updated_just_now)
+                elapsedMinutes == 1L -> getString(R.string.updated_one_minute_ago)
+                else -> getString(R.string.updated_minutes_ago, elapsedMinutes)
+            }
+        } else {
+            binding.connectionTv.text = getString(R.string.update_failed_no_data)
+        }
+    }
+
+
 
 
 
