@@ -306,11 +306,42 @@ class MainActivity : AppCompatActivity() {
 
         binding.precipitationTitleTv.text = getString(R.string.precipitation_title)
 
-        binding.precipitationDataTv.text = getString(
-            R.string.precipitation_data,
-            weatherResponse.main.humidity,
-            weatherResponse.clouds.all
-        )
+        val rainVolume = weatherResponse.rain?.one_h ?: weatherResponse.rain?.three_h ?: 0.0
+
+
+        val snowVolume = weatherResponse.snow?.one_h ?: weatherResponse.snow?.three_h ?: 0.0
+
+
+        if (snowVolume > 0) {
+            binding.precipitationDataTv.text = getString(
+                R.string.snow_data,
+                weatherResponse.snow?.one_h ?: 0.0  // Snow volume for last 1 hour
+
+            )
+        } else if (rainVolume >0 ) {
+            binding.precipitationDataTv.text = getString(
+                R.string.rain_data,
+                weatherResponse.rain?.one_h ?: 0.0
+            )
+
+
+        }
+        else {
+            binding.precipitationDataTv.text = getString(
+                R.string.precipitation_data,
+                weatherResponse.main.humidity,
+                weatherResponse.clouds.all,
+            )
+        }
+
+
+
+
+
+
+
+
+
         binding.otherTitleTv.text = getString(R.string.other_title)
         val visibilityMiles = weatherResponse.visibility / 1609.34 // Convert meters to miles
         val pressureInHg = weatherResponse.main.pressure / 33.864 // Convert hPa to inHg
