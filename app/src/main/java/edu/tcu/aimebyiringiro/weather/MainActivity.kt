@@ -417,35 +417,36 @@ class MainActivity : AppCompatActivity() {
                     }
 
                 } catch (e: Exception) {
-                    // In case of an exception, handle it similarly to offline mode
-                    var offlineScenario = true
-                    if (savedWeatherData != null) {
-                        weatherResponse = savedWeatherData!!
-                        displayWeather()
-
-                        val savedPlaces = loadPlaceFromPrefs()
-                        if (savedPlaces != null) {
-                            geoResponse = savedPlaces
-                            displayPlace()
-                        }
-
-                        // Do NOT increment offlineMinutes here.
-                        // Still show just now if offlineMinutes == 0
-                        if (lastUpdateTimeMillis == 0L) {
-                            binding.connectionTv.text = getString(R.string.updated_just_now)
-                        } else {
-                            if (offlineMinutes == 0) {
-                                binding.connectionTv.text = getString(R.string.updated_just_now)
-                            } else {
-                                binding.connectionTv.text = getString(R.string.updated_minutes_ago, offlineMinutes)
-                            }
-                        }
-
-                    } else {
-                        binding.connectionTv.text = getString(R.string.update_failed_no_data)
-                        offlineScenario = false
-                    }
-                    wasOffline = offlineScenario
+                     binding.connectionTv.text = getString(R.string.failed_to_connect)
+//                    // In case of an exception, handle it similarly to offline mode
+//                    var offlineScenario = true
+//                    if (savedWeatherData != null) {
+//                        weatherResponse = savedWeatherData!!
+//                        displayWeather()
+//
+//                        val savedPlaces = loadPlaceFromPrefs()
+//                        if (savedPlaces != null) {
+//                            geoResponse = savedPlaces
+//                            displayPlace()
+//                        }
+//
+//                        // Do NOT increment offlineMinutes here.
+//                        // Still show just now if offlineMinutes == 0
+//                        if (lastUpdateTimeMillis == 0L) {
+//                            binding.connectionTv.text = getString(R.string.updated_just_now)
+//                        } else {
+//                            if (offlineMinutes == 0) {
+//                                binding.connectionTv.text = getString(R.string.updated_just_now)
+//                            } else {
+//                                binding.connectionTv.text = getString(R.string.updated_minutes_ago, offlineMinutes)
+//                            }
+//                        }
+//
+//                    } else {
+//                        binding.connectionTv.text = getString(R.string.update_failed_no_data)
+//                        offlineScenario = false
+//                    }
+//                    wasOffline = offlineScenario
                 } finally {
                     dialog.dismiss()
                 }
