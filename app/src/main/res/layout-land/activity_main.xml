@@ -63,15 +63,16 @@
             android:text="@string/no_data"
             android:textAlignment="center"
             android:textSize="20sp"
-            app:layout_constraintBottom_toTopOf="@id/wind_cv"
+            app:layout_constraintBottom_toTopOf="@id/sun_cv"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/temperature_tv" />
 
+        <!-- Sun CardView -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/sun_cv"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             app:cardCornerRadius="5dp"
@@ -79,14 +80,12 @@
             app:layout_constraintEnd_toStartOf="@id/wind_cv"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/description_tv"
-            app:layout_constraintBottom_toBottomOf="@id/wind_cv"
             app:layout_constraintHorizontal_chainStyle="spread"
             app:layout_constraintHorizontal_weight="1">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-
                 android:layout_margin="5dp">
 
                 <TextView
@@ -111,6 +110,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Wind CardView -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/wind_cv"
             android:layout_width="0dp"
@@ -125,7 +125,7 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_margin="5dp">
 
                 <TextView
@@ -149,23 +149,23 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Precipitation CardView -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/precipitation_cv"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             app:cardCornerRadius="5dp"
             app:cardElevation="5dp"
             app:layout_constraintEnd_toStartOf="@id/other_cv"
             app:layout_constraintStart_toEndOf="@id/wind_cv"
-            app:layout_constraintBottom_toBottomOf="@id/wind_cv"
             app:layout_constraintTop_toBottomOf="@id/description_tv"
             app:layout_constraintHorizontal_weight="1">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_margin="5dp">
 
                 <TextView
@@ -189,6 +189,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Other CardView -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/other_cv"
             android:layout_width="0dp"
@@ -201,10 +202,9 @@
             app:layout_constraintTop_toBottomOf="@id/description_tv"
             app:layout_constraintHorizontal_weight="1">
 
-
-        <androidx.constraintlayout.widget.ConstraintLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_margin="5dp">
 
                 <TextView
@@ -243,8 +243,3 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </ScrollView>
-<!--
-redifne constrains of the layout dint
-cancel delay countin
-
--->

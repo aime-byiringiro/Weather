@@ -49,15 +49,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var weatherService: WeatherService
     private lateinit var geoService: GeoService
     private lateinit var weatherResponse: WeatherResponse
-    private lateinit var geoResponse: List<Place>
+    private var geoResponse: List<Place> = emptyList()
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 updateLocationAndWeatherRepeatedly()
-                binding.connectionTv.text = getString(R.string.location_permission_granted)
+                binding.connectionTv.text = getString(R.string.connecting)
+                Snackbar.make(
+                    findViewById(android.R.id.content),
+                    getString(R.string.location_permission_granted),
+                    Snackbar.LENGTH_SHORT
+                ).show()
             } else {
-                binding.connectionTv.text = getString(R.string.location_permission_denied)
+                binding.connectionTv.text = getString(R.string.connecting)
                 Snackbar.make(
                     findViewById(android.R.id.content),
                     getString(R.string.location_permission_denied),
@@ -72,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     private var geoServiceCall: Call<List<Place>>? = null
     private var delayJob: Job? = null
     private var savedWeatherData: WeatherResponse? = null
+    private var offlineMinutes = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,14 +99,22 @@ class MainActivity : AppCompatActivity() {
         weatherService = retrofit.create(WeatherService::class.java)
         geoService = retrofit.create(GeoService::class.java)
 
-        // Load previously saved weather data and last update time
+        // Load previously saved weather data, place and last update time
         lastUpdateTimeMillis = loadLastUpdateTime()
         savedWeatherData = loadWeatherDataFromPrefs()
+        val savedPlaces = loadPlaceFromPrefs()
+        if (savedPlaces != null) {
+            geoResponse = savedPlaces
+        }
 
         if (savedWeatherData != null) {
             weatherResponse = savedWeatherData!!
             displayWeather()
-            // Display how long ago it was updated
+            // If we have place data, display it too
+            if (geoResponse.isNotEmpty()) {
+                displayPlace()
+            }
+
             if (lastUpdateTimeMillis == 0L) {
                 binding.connectionTv.text = getString(R.string.updated_just_now)
             } else {
@@ -298,6 +312,7 @@ class MainActivity : AppCompatActivity() {
                     val responseList = response.body()
                     if (!responseList.isNullOrEmpty()) {
                         geoResponse = responseList
+                        savePlaceToPrefs(geoResponse) // Save the place info
                         displayPlace()
                     } else {
                         displayUpdateFailed()
@@ -359,57 +374,103 @@ class MainActivity : AppCompatActivity() {
                 dialog.show()
                 delay(2000)
                 dialog.dismiss()
+
+                var wasOffline = false
                 try {
                     if (!isAirplaneModeOn(this@MainActivity)) {
+                        // Reset because we are now online
+                        offlineMinutes = 0
+                        wasOffline = false
 
                         binding.connectionTv.text = getString(R.string.updating)
                         updateLocationAndWeather()
-
                         binding.connectionTv.text = getString(R.string.updated_just_now)
+
                     } else {
+                        wasOffline = true
                         if (savedWeatherData != null) {
                             weatherResponse = savedWeatherData!!
                             displayWeather()
+
+                            // Load saved places if any
+                            val savedPlaces = loadPlaceFromPrefs()
+                            if (savedPlaces != null) {
+                                geoResponse = savedPlaces
+                                displayPlace()
+                            }
+
+                            // Do NOT increment offlineMinutes here.
+                            // Show just now on the first offline cycle (when offlineMinutes == 0).
                             if (lastUpdateTimeMillis == 0L) {
                                 binding.connectionTv.text = getString(R.string.updated_just_now)
                             } else {
-                                val elapsedTimeMillis = System.currentTimeMillis() - lastUpdateTimeMillis
-                                val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTimeMillis)
-                                binding.connectionTv.text = getString(R.string.updated_minutes_ago, elapsedMinutes)
+                                if (offlineMinutes == 0) {
+                                    binding.connectionTv.text = getString(R.string.updated_just_now)
+                                } else {
+                                    binding.connectionTv.text = getString(R.string.updated_minutes_ago, offlineMinutes)
+                                }
                             }
+
                         } else {
                             binding.connectionTv.text = getString(R.string.update_failed_no_data)
                         }
                     }
+
                 } catch (e: Exception) {
+                    // In case of an exception, handle it similarly to offline mode
+                    var offlineScenario = true
                     if (savedWeatherData != null) {
                         weatherResponse = savedWeatherData!!
                         displayWeather()
+
+                        val savedPlaces = loadPlaceFromPrefs()
+                        if (savedPlaces != null) {
+                            geoResponse = savedPlaces
+                            displayPlace()
+                        }
+
+                        // Do NOT increment offlineMinutes here.
+                        // Still show just now if offlineMinutes == 0
                         if (lastUpdateTimeMillis == 0L) {
                             binding.connectionTv.text = getString(R.string.updated_just_now)
                         } else {
-                            val elapsedTimeMillis = System.currentTimeMillis() - lastUpdateTimeMillis
-                            val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTimeMillis)
-                            binding.connectionTv.text = getString(R.string.updated_minutes_ago, elapsedMinutes)
+                            if (offlineMinutes == 0) {
+                                binding.connectionTv.text = getString(R.string.updated_just_now)
+                            } else {
+                                binding.connectionTv.text = getString(R.string.updated_minutes_ago, offlineMinutes)
+                            }
                         }
+
                     } else {
                         binding.connectionTv.text = getString(R.string.update_failed_no_data)
+                        offlineScenario = false
                     }
+                    wasOffline = offlineScenario
                 } finally {
                     dialog.dismiss()
                 }
 
-                delay(15000) // Wait 15 seconds before the next update
+                // Wait 15 seconds before the next update cycle
+                delay(15000)
+
+                // After the delay, if we were offline during this cycle, increment offlineMinutes
+                // If we were online, reset it to 0.
+                if (wasOffline) {
+                    offlineMinutes += 1
+                } else {
+                    offlineMinutes = 0
+                }
             }
         }
     }
+
 
     private fun isAirplaneModeOn(context: Context): Boolean {
         return Settings.Global.getInt(context.contentResolver,
             Settings.Global.AIRPLANE_MODE_ON, 0) != 0
     }
 
-    // Utility methods for saving/loading WeatherResponse and last update time to/from SharedPreferences
+    // Utility methods for saving/loading WeatherResponse, Place list, and last update time to/from SharedPreferences
 
     private fun saveWeatherDataToPrefs(weather: WeatherResponse) {
         val prefs = getSharedPreferences("weather_prefs", Context.MODE_PRIVATE)
@@ -423,6 +484,20 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("weather_prefs", Context.MODE_PRIVATE)
         val weatherJson = prefs.getString("last_weather", null) ?: return null
         return Gson().fromJson(weatherJson, object : TypeToken<WeatherResponse>() {}.type)
+    }
+
+    private fun savePlaceToPrefs(placeList: List<Place>) {
+        val prefs = getSharedPreferences("weather_prefs", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        val placeJson = Gson().toJson(placeList)
+        editor.putString("last_place", placeJson)
+        editor.apply()
+    }
+
+    private fun loadPlaceFromPrefs(): List<Place>? {
+        val prefs = getSharedPreferences("weather_prefs", Context.MODE_PRIVATE)
+        val placeJson = prefs.getString("last_place", null) ?: return null
+        return Gson().fromJson(placeJson, object : TypeToken<List<Place>>() {}.type)
     }
 
     private fun saveLastUpdateTime(time: Long) {
